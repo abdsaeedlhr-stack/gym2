@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gym Tracker Pro | Dashboard</title>
+    
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Load Fonts & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Syncopate:wght@700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        heading: ['Syncopate', 'sans-serif'],
+                    },
+                    colors: {
+                        gym: {
+                            dark: '#050505',
+                            card: 'rgba(20, 20, 25, 0.7)',
+                            primary: '#00ff88', // Neon Green
+                            accent: '#00e5ff', // Cyan
+                            muted: '#8892b0'
+                        }
+                    },
+                    animation: {
+                        'glow': 'glow 3s ease-in-out infinite alternate',
+                        'slide-up': 'slideUp 0.5s ease-out forwards',
+                    },
+                    keyframes: {
+                        glow: {
+                            '0%': { boxShadow: '0 0 10px rgba(0, 255, 136, 0.2)' },
+                            '100%': { boxShadow: '0 0 25px rgba(0, 255, 136, 0.6)' }
+                        },
+                        slideUp: {
+                            '0%': { opacity: '0', transform: 'translateY(20px)' },
+                            '100%': { opacity: '1', transform: 'translateY(0)' }
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            background-color: #050505;
+            background-image: 
+                radial-gradient(circle at 15% 50%, rgba(0, 255, 136, 0.08) 0%, transparent 50%),
+                radial-gradient(circle at 85% 30%, rgba(0, 229, 255, 0.08) 0%, transparent 50%);
+            color: #f8fafc;
+            overflow-x: hidden;
+            background-attachment: fixed;
+        }
+        
+        /* Neon Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #050505; }
+        ::-webkit-scrollbar-thumb { background: #222; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #00ff88; box-shadow: 0 0 10px #00ff88; }
+
+        /* Remove Number Input Arrows */
+        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-outer-spin-button {
+            -webkit-appearance: none; margin: 0;
+        }
+
+        /* Glassmorphism Classes */
+        .glass {
+            background: rgba(20, 25, 30, 0.5);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .neon-border {
+            position: relative;
+        }
+        .neon-border::after {
+            content: ''; position: absolute; inset: 0;
+            border-radius: inherit; padding: 1px;
+            background: linear-gradient(45deg, #00ff88, transparent, #00e5ff);
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor; mask-composite: exclude;
+            opacity: 0.5; transition: opacity 0.3s; pointer-events: none;
+        }
+        .group:hover .neon-border::after { opacity: 1; }
+
+        .history-card { transition: all 0.3s ease; }
+        .history-card:hover { transform: scale(1.02); }
+    </style>
+</head>
+<body class="antialiased min-h-screen flex flex-col">
+
+    <!-- Top Navigation -->
+    <header class="glass sticky top-0 z-50 border-b border-gray-800">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-3 w-full md:w-auto">
+                <div class="w-10 h-10 rounded-full flex items-center justify-center text-[#050505] bg-gym-primary shadow-[0_0_15px_rgba(0,255,136,0.5)]">
+                    <i class="fa-solid fa-bolt text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-heading tracking-wider text-white">GYM<span class="text-gym-primary">PRO</span></h1>
+                    <div class="text-[10px] text-gym-primary tracking-widest uppercase"><span class="inline-block w-1.5 h-1.5 rounded-full bg-gym-primary animate-pulse mr-1"></span>Tracker Active</div>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-4 w-full md:w-auto">
+                <!-- User Profile Summary -->
+                <div class="hidden sm:flex items-center gap-4 text-xs font-medium text-gym-muted border-r border-gray-700 pr-4">
+                    <span><i class="fa-solid fa-user text-gym-accent"></i> 20</span>
+                    <span><i class="fa-solid fa-weight-scale text-gym-accent"></i> 63 kg</span>
+                    <span><i class="fa-solid fa-ruler text-gym-accent"></i> 5'10"</span>
+                </div>
+                
+                <button onclick="startNewWeek()" class="w-full md:w-auto px-5 py-2 bg-transparent border border-gym-primary text-gym-primary hover:bg-gym-primary hover:text-black font-bold rounded-md transition-all uppercase tracking-wider text-xs flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-plus"></i> New Week
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow p-4 md:p-6 lg:p-8">
+        <div class="max-w-7xl mx-auto">
+            
+            <!-- Section Tabs -->
+            <div class="flex gap-4 mb-8 border-b border-gray-800 pb-2 overflow-x-auto">
+                <button onclick="switchTab('active')" id="tab-active" class="pb-2 text-sm font-bold uppercase tracking-wider text-gym-primary border-b-2 border-gym-primary whitespace-nowrap">Current Week</button>
+                <button onclick="switchTab('history')" id="tab-history" class="pb-2 text-sm font-bold uppercase tracking-wider text-gray-500 border-b-2 border-transparent hover:text-gray-300 whitespace-nowrap">Progress Vault (History)</button>
+                
+                <div id="saveIndicator" class="ml-auto text-xs font-bold text-gym-primary opacity-0 transition-opacity flex items-center gap-1">
+                    <i class="fa-solid fa-check"></i> Saved
+                </div>
+            </div>
+
+            <!-- TAB: CURRENT WEEK -->
+            <div id="view-active" class="block">
+                
+                <div class="mb-6 flex justify-between items-end">
+                    <h2 id="currentWeekTitle" class="text-2xl font-bold text-white font-heading">Week of ...</h2>
+                </div>
+
+                <!-- Days Grid -->
+                <div id="tracker-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 mb-10">
+                    <!-- Cards injected by JS -->
+                </div>
+
+                <!-- Weekly Wrap-up Section -->
+                <div class="glass rounded-xl p-1 relative overflow-hidden neon-border group">
+                    <div class="p-6 md:p-8">
+                        <div class="flex flex-col lg:flex-row gap-8">
+                            
+                            <div class="w-full lg:w-1/3">
+                                <h3 class="text-lg font-bold text-white mb-2 font-heading uppercase"><i class="fa-solid fa-camera text-gym-accent mr-2"></i> Physique Check</h3>
+                                <p class="text-xs text-gym-muted mb-4">Upload a progress picture to lock in this week's results.</p>
+                                
+                                <div class="relative h-64 rounded-lg border border-gray-700 bg-black/50 overflow-hidden flex items-center justify-center cursor-pointer hover:border-gym-primary transition-colors group/upload">
+                                    <input type="file" id="progressPhotoInput" accept="image/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" onchange="handlePhotoUpload(event)">
+                                    
+                                    <div id="photoPlaceholder" class="text-center p-4">
+                                        <i class="fa-solid fa-image text-3xl text-gray-600 group-hover/upload:text-gym-primary transition-colors mb-2"></i>
+                                        <div class="text-sm font-medium text-gray-400">Tap to Upload Image</div>
+                                    </div>
+
+                                    <img id="progressPhotoDisplay" src="" class="absolute inset-0 w-full h-full object-cover hidden z-0">
+                                    
+                                    <button id="removePhotoBtn" onclick="removePhoto(event)" class="absolute top-2 right-2 z-20 bg-red-500 text-white w-8 h-8 rounded-md flex items-center justify-center opacity-0 group-hover/upload:opacity-100 transition-opacity hidden hover:bg-red-600">
+                                        <i class="fa-solid fa-trash text-xs"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="w-full lg:w-2/3 flex flex-col">
+                                <h3 class="text-lg font-bold text-white mb-2 font-heading uppercase"><i class="fa-solid fa-book-open text-gym-primary mr-2"></i> Weekly Debrief</h3>
+                                <p class="text-xs text-gym-muted mb-4">Log your weight changes, PRs hit, or diet modifications here.</p>
+                                
+                                <textarea id="weeklyNotes" oninput="saveWeeklyNotes(this.value)" placeholder="e.g., Hit 80kg bench PR. Weight increased to 63.5kg. Feeling stronger on back days..." class="flex-grow w-full bg-black/50 border border-gray-700 rounded-lg p-4 text-sm text-white focus:outline-none focus:border-gym-primary resize-none min-h-[200px]"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB: HISTORY VAULT -->
+            <div id="view-history" class="hidden">
+                <div class="mb-6">
+                    <h2 class="text-2xl font-bold text-white font-heading mb-2">Progress Vault</h2>
+                    <p class="text-sm text-gym-muted">Review your past weeks, photos, and notes to see how far you've come.</p>
+                </div>
+                
+                <div id="history-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- History cards injected by JS -->
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <script>
+        // --- DATA & CONFIG ---
+        const routine = {
+            "Monday": "Upper/Mid Chest, Triceps, Abs",
+            "Tuesday": "Back, Biceps, Forearms",
+            "Wednesday": "Lower/Mid Chest, Abs",
+            "Thursday": "Triceps, Shoulders",
+            "Friday": "Back, Biceps, Abs",
+            "Saturday": "Legs, Forearms",
+            "Sunday": "OFF"
+        };
+        const days = Object.keys(routine);
+        
+        // Build Dropdown Options based on the routine + extras
+        const uniqueWorkouts = [...new Set(Object.values(routine))];
+        const workoutOptions = [
+            ...uniqueWorkouts.filter(w => w !== "OFF"),
+            "Cardio & Core", "Full Body", "OFF / Absent", "Other (See Notes)"
+        ];
+
+        let appState = {
+            weeks: [],
+            currentWeekId: null
+        };
+
+        // Initialize App
+        function initApp() {
+            const savedData = localStorage.getItem('gymTrackerPro_v3');
+            if (savedData) {
+                appState = JSON.parse(savedData);
+                // Ensure there is always a week selected
+                if (!appState.currentWeekId && appState.weeks.length > 0) {
+                    appState.currentWeekId = appState.weeks[0].id;
+                }
+            } else {
+                createNewWeek(true);
+            }
+            renderActiveWeek();
+        }
+
+        // --- CORE LOGIC ---
+        function createNewWeek(isInitial = false) {
+            if (!isInitial && !confirm("Start a new week? Current data will be moved to the History Vault.")) return;
+
+            const dateStr = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+            const newWeekId = 'week_' + Date.now();
+            
+            const newWeek = {
+                id: newWeekId,
+                title: `Week of ${dateStr}`,
+                days: {},
+                photoDataUrl: null,
+                weeklyNotes: ''
+            };
+
+            days.forEach(day => {
+                newWeek.days[day] = { 
+                    actualWorkout: routine[day],
+                    water: '', sleep: '', creatine: '', whey: '', arginine: '', notes: ''
+                };
+            });
+
+            appState.weeks.unshift(newWeek);
+            appState.currentWeekId = newWeekId;
+            saveToLocal();
+            
+            if (!isInitial) {
+                switchTab('active');
+                renderActiveWeek();
+            }
+        }
+
+        function getActiveWeek() {
+            return appState.weeks.find(w => w.id === appState.currentWeekId) || appState.weeks[0];
+        }
+
+        let saveTimer;
+        function saveToLocal() {
+            try {
+                localStorage.setItem('gymTrackerPro_v3', JSON.stringify(appState));
+                showSaveIndicator();
+            } catch (e) {
+                console.error("Save error (Quota exceeded?):", e);
+                alert("Storage full! Try deleting an old photo from the History Vault.");
+            }
+        }
+
+        function showSaveIndicator() {
+            const ind = document.getElementById('saveIndicator');
+            ind.style.opacity = '1';
+            clearTimeout(saveTimer);
+            saveTimer = setTimeout(() => ind.style.opacity = '0', 2000);
+        }
+
+        function updateField(day, field, value) {
+            const week = getActiveWeek();
+            week.days[day][field] = value;
+            saveToLocal();
+        }
+
+        function saveWeeklyNotes(value) {
+            getActiveWeek().weeklyNotes = value;
+            saveToLocal();
+        }
+
+        function handlePhotoUpload(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = function(event) {
+                const img = new Image();
+                img.src = event.target.result;
+                img.onload = function() {
+                    // Compress image to save localstorage space
+                    const canvas = document.createElement('canvas');
+                    const MAX_SIZE = 800;
+                    let w = img.width;
+                    let h = img.height;
+
+                    if (w > h && w > MAX_SIZE) { h *= MAX_SIZE / w; w = MAX_SIZE; } 
+                    else if (h > MAX_SIZE) { w *= MAX_SIZE / h; h = MAX_SIZE; }
+
+                    canvas.width = w;
+                    canvas.height = h;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, w, h);
+                    
+                    // Compress to JPG 0.7 quality
+                    const dataUrl = canvas.toDataURL('image/jpeg', 0.7); 
+                    getActiveWeek().photoDataUrl = dataUrl;
+                    saveToLocal();
+                    renderPhotoUI();
+                }
+            }
+        }
+
+        function removePhoto(e) {
+            e.preventDefault(); e.stopPropagation();
+            if(confirm("Remove this photo?")) {
+                getActiveWeek().photoDataUrl = null;
+                document.getElementById('progressPhotoInput').value = ''; 
+                saveToLocal();
+                renderPhotoUI();
+            }
+        }
+
+        function renderPhotoUI() {
+            const photo = getActiveWeek().photoDataUrl;
+            const display = document.getElementById('progressPhotoDisplay');
+            const placeholder = document.getElementById('photoPlaceholder');
+            const btn = document.getElementById('removePhotoBtn');
+
+            if (photo) {
+                display.src = photo;
+                display.classList.remove('hidden');
+                placeholder.classList.add('hidden');
+                btn.classList.remove('hidden');
+            } else {
+                display.src = '';
+                display.classList.add('hidden');
+                placeholder.classList.remove('hidden');
+                btn.classList.add('hidden');
+            }
+        }
+
+        function renderActiveWeek() {
+            const week = getActiveWeek();
+            document.getElementById('currentWeekTitle').innerText = week.title;
+            document.getElementById('weeklyNotes').value = week.weeklyNotes || '';
+            renderPhotoUI();
+
+            const container = document.getElementById('tracker-container');
+            let html = '';
+
+            days.forEach((day, i) => {
+                const data = week.days[day];
+                const planned = routine[day];
+                
+                // Select Dropdown logic
+                let optionsHtml = '';
+                workoutOptions.forEach(opt => {
+                    optionsHtml += `<option value="${opt}" ${data.actualWorkout === opt ? 'selected' : ''}>${opt}</option>`;
+                });
+
+                html += `
+                <div class="glass rounded-xl overflow-hidden neon-border group animate-slide-up" style="animation-delay: ${i*0.1}s; opacity:0;">
+                    
+                    <div class="p-3 border-b border-gray-700/50 flex justify-between items-center bg-black/40">
+                        <div>
+                            <h3 class="text-md font-bold text-white uppercase tracking-wider">${day}</h3>
+                            <div class="text-[9px] text-gym-primary uppercase tracking-widest mt-0.5">Plan: ${planned}</div>
+                        </div>
+                        ${planned === 'OFF' ? '<span class="text-[10px] font-bold px-2 py-1 bg-gray-800 text-gray-400 rounded">REST</span>' : ''}
+                    </div>
+
+                    <div class="p-4 space-y-4">
+                        
+                        <!-- Actual Workout -->
+                        <div>
+                            <label class="text-[9px] text-gray-500 uppercase tracking-widest block mb-1">Actual Workout</label>
+                            <select onchange="updateField('${day}', 'actualWorkout', this.value)" class="w-full bg-black/50 border border-gray-700 rounded p-2 text-xs text-white focus:border-gym-primary outline-none">
+                                ${optionsHtml}
+                            </select>
+                        </div>
+
+                        <!-- Vitals Grid -->
+                        <div class="grid grid-cols-2 gap-2">
+                            <div class="bg-black/30 border border-gray-800 rounded p-2 focus-within:border-blue-500 transition-colors">
+                                <label class="text-[9px] text-blue-400 uppercase tracking-widest flex items-center gap-1 mb-1"><i class="fa-solid fa-droplet"></i> Water (L)</label>
+                                <input type="number" step="0.5" value="${data.water}" oninput="updateField('${day}', 'water', this.value)" placeholder="e.g. 3" class="w-full bg-transparent text-white text-sm outline-none font-bold placeholder-gray-700">
+                            </div>
+                            <div class="bg-black/30 border border-gray-800 rounded p-2 focus-within:border-indigo-400 transition-colors">
+                                <label class="text-[9px] text-indigo-400 uppercase tracking-widest flex items-center gap-1 mb-1"><i class="fa-solid fa-moon"></i> Sleep (H)</label>
+                                <input type="number" step="0.5" value="${data.sleep}" oninput="updateField('${day}', 'sleep', this.value)" placeholder="e.g. 8" class="w-full bg-transparent text-white text-sm outline-none font-bold placeholder-gray-700">
+                            </div>
+                        </div>
+
+                        <!-- Supplements Section -->
+                        <div class="border border-gray-800 rounded p-2 bg-black/20">
+                            <div class="text-[9px] text-center text-gym-muted uppercase tracking-widest mb-2 border-b border-gray-800 pb-1">Supplements Log</div>
+                            <div class="grid grid-cols-3 gap-2">
+                                <div class="text-center">
+                                    <label class="text-[8px] text-gray-400 block mb-1 uppercase">Creatine (g)</label>
+                                    <input type="number" value="${data.creatine}" oninput="updateField('${day}', 'creatine', this.value)" placeholder="5" class="w-full bg-black/50 border border-gray-700 rounded py-1 text-center text-xs text-white outline-none focus:border-gym-primary">
+                                </div>
+                                <div class="text-center">
+                                    <label class="text-[8px] text-gray-400 block mb-1 uppercase">Whey (Scps)</label>
+                                    <input type="number" step="0.5" value="${data.whey}" oninput="updateField('${day}', 'whey', this.value)" placeholder="1" class="w-full bg-black/50 border border-gray-700 rounded py-1 text-center text-xs text-white outline-none focus:border-gym-primary">
+                                </div>
+                                <div class="text-center">
+                                    <label class="text-[8px] text-gray-400 block mb-1 uppercase">L-Arg (Tabs)</label>
+                                    <input type="number" value="${data.arginine}" oninput="updateField('${day}', 'arginine', this.value)" placeholder="2" class="w-full bg-black/50 border border-gray-700 rounded py-1 text-center text-xs text-white outline-none focus:border-gym-primary">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Notes -->
+                        <textarea oninput="updateField('${day}', 'notes', this.value)" placeholder="Daily notes, pumps, felt weak/strong..." class="w-full bg-black/30 border border-gray-800 rounded p-2 text-xs text-white focus:border-gym-primary outline-none resize-none h-12">${data.notes}</textarea>
+                    </div>
+                </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        function renderHistory() {
+            const container = document.getElementById('history-container');
+            if (appState.weeks.length <= 1) {
+                container.innerHTML = `<div class="col-span-full text-center py-12 text-gray-500 glass rounded-xl">No past history yet. Finish your current week and start a new one to populate the vault!</div>`;
+                return;
+            }
+
+            let html = '';
+            // Skip the first item (current active week)
+            for(let i = 1; i < appState.weeks.length; i++) {
+                const w = appState.weeks[i];
+                const photoSrc = w.photoDataUrl || 'https://placehold.co/400x300/111/333?text=No+Photo';
+                
+                html += `
+                <div class="glass rounded-xl overflow-hidden history-card border border-gray-800 flex flex-col">
+                    <div class="h-48 w-full bg-black relative">
+                        <img src="${photoSrc}" class="w-full h-full object-cover opacity-80" alt="Progress Photo">
+                        <div class="absolute bottom-0 left-0 w-full bg-gradient-to-t from-black to-transparent p-4">
+                            <h3 class="text-white font-bold text-lg">${w.title}</h3>
+                        </div>
+                    </div>
+                    <div class="p-4 flex-grow flex flex-col">
+                        <h4 class="text-[10px] text-gym-primary uppercase tracking-widest mb-2 font-bold">Weekly Notes Summary</h4>
+                        <p class="text-xs text-gray-400 line-clamp-4 italic flex-grow">
+                            ${w.weeklyNotes ? `"${w.weeklyNotes}"` : 'No notes logged for this week.'}
+                        </p>
+                        <button onclick="deleteHistoryWeek('${w.id}')" class="mt-4 text-xs text-red-500 hover:text-red-400 text-right w-full"><i class="fa-solid fa-trash mr-1"></i> Delete Record</button>
+                    </div>
+                </div>
+                `;
+            }
+            container.innerHTML = html;
+        }
+
+        function deleteHistoryWeek(id) {
+            if(confirm("Permanently delete this week's record?")) {
+                appState.weeks = appState.weeks.filter(w => w.id !== id);
+                saveToLocal();
+                renderHistory();
+            }
+        }
+
+        function switchTab(tab) {
+            const tActive = document.getElementById('tab-active');
+            const tHistory = document.getElementById('tab-history');
+            const vActive = document.getElementById('view-active');
+            const vHistory = document.getElementById('view-history');
+
+            if (tab === 'active') {
+                tActive.className = "pb-2 text-sm font-bold uppercase tracking-wider text-gym-primary border-b-2 border-gym-primary whitespace-nowrap";
+                tHistory.className = "pb-2 text-sm font-bold uppercase tracking-wider text-gray-500 border-b-2 border-transparent hover:text-gray-300 whitespace-nowrap";
+                vActive.classList.remove('hidden');
+                vHistory.classList.add('hidden');
+                renderActiveWeek();
+            } else {
+                tHistory.className = "pb-2 text-sm font-bold uppercase tracking-wider text-gym-primary border-b-2 border-gym-primary whitespace-nowrap";
+                tActive.className = "pb-2 text-sm font-bold uppercase tracking-wider text-gray-500 border-b-2 border-transparent hover:text-gray-300 whitespace-nowrap";
+                vHistory.classList.remove('hidden');
+                vActive.classList.add('hidden');
+                renderHistory();
+            }
+        }
+
+        // Boot
+        window.onload = initApp;
+    </script>
+</body>
+</html>
