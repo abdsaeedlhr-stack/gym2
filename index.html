@@ -108,6 +108,7 @@
                 <div>
                     <h1 class="text-xl font-heading tracking-wider text-white">GYM<span class="text-gym-primary">PRO</span></h1>
                     <div class="text-[10px] text-gym-primary tracking-widest uppercase"><span class="inline-block w-1.5 h-1.5 rounded-full bg-gym-primary animate-pulse mr-1"></span>Tracker Active</div>
+                    <div id="syncBadge" class="text-[10px] tracking-widest uppercase text-gray-500 mt-0.5"><span id="syncDot" class="inline-block w-1.5 h-1.5 rounded-full bg-gray-600 mr-1"></span><span id="syncText">Check-in sync: …</span></div>
                 </div>
             </div>
             
@@ -202,6 +203,8 @@
         </div>
     </main>
 
+    <footer class="text-center text-[10px] text-gray-600 tracking-widest uppercase pb-6">Gym Tracker Pro · nightly check-ins auto-sync</footer>
+
     <script>
         // --- DATA & CONFIG ---
         const routine = {
@@ -239,7 +242,7 @@
             } else {
                 createNewWeek(true);
             }
-            renderActiveWeek();
+            syncCheckins().finally(() => renderActiveWeek());
         }
 
         // --- CORE LOGIC ---
@@ -509,6 +512,84 @@
                 vHistory.classList.remove('hidden');
                 vActive.classList.add('hidden');
                 renderHistory();
+            }
+        }
+
+
+        // --- CHECK-IN SYNC (nightly WhatsApp check-ins -> day cards) ---
+        // Loads data/checkins.json (published with the site) and merges each
+        // entry into its weekday card. Only empty fields are filled, so manual
+        // edits are never overwritten. Re-runs are safe (notes carry a
+        // per-date marker and are never duplicated).
+        function setSyncBadge(ok) {
+            const dot = document.getElementById('syncDot');
+            const txt = document.getElementById('syncText');
+            if (!dot || !txt) return;
+            if (ok) {
+                dot.className = 'inline-block w-1.5 h-1.5 rounded-full bg-gym-primary animate-pulse mr-1';
+                txt.textContent = 'Check-in sync: on';
+            } else {
+                dot.className = 'inline-block w-1.5 h-1.5 rounded-full bg-gray-600 mr-1';
+                txt.textContent = 'Check-in sync: off';
+            }
+        }
+
+        async function syncCheckins() {
+            try {
+                const res = await fetch('data/checkins.json', { cache: 'no-store' });
+                if (!res.ok) throw new Error('no data file');
+                const data = await res.json();
+                let changed = false;
+
+                (data.checkins || []).forEach(c => {
+                    const weekId = 'week_' + String(c.week_monday).replace(/-/g, '');
+                    let week = appState.weeks.find(w => w.id === weekId);
+
+                    if (!week) {
+                        const ageMs = Date.now() - new Date(c.date + 'T12:00:00').getTime();
+                        if (ageMs < 7 * 24 * 3600 * 1000) {
+                            // Recent check-in -> merge into the active week
+                            week = getActiveWeek();
+                        } else {
+                            // Older check-in -> its own history week (vault)
+                            week = {
+                                id: weekId,
+                                title: 'Week of ' + c.week_title,
+                                days: {},
+                                photoDataUrl: null,
+                                weeklyNotes: ''
+                            };
+                            days.forEach(d => {
+                                week.days[d] = {
+                                    actualWorkout: routine[d],
+                                    water: '', sleep: '', creatine: '', whey: '', arginine: '', notes: ''
+                                };
+                            });
+                            appState.weeks.push(week);
+                        }
+                    }
+
+                    const day = week && week.days[c.weekday];
+                    if (!day) return;
+
+                    if (c.workout_option && (!day.actualWorkout || day.actualWorkout === routine[c.weekday])) {
+                        day.actualWorkout = c.workout_option;
+                        changed = true;
+                    }
+                    if (!day.water && c.water_liters != null && c.water_liters !== '') {
+                        day.water = String(c.water_liters);
+                        changed = true;
+                    }
+                    if (c.note && !(day.notes || '').includes(c.note)) {
+                        day.notes = (day.notes ? day.notes + '\n' : '') + c.note;
+                        changed = true;
+                    }
+                });
+
+                if (changed) saveToLocal();
+                setSyncBadge(true);
+            } catch (e) {
+                setSyncBadge(false);
             }
         }
 
