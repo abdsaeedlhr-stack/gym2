@@ -1,0 +1,33 @@
+{
+  "generated": "2026-10-01T16:29:19",
+  "count": 3,
+  "checkins": [
+    {
+      "date": "2026-09-28",
+      "weekday": "Monday",
+      "week_monday": "2026-09-28",
+      "week_title": "Sep 28, 2026",
+      "workout_option": "Upper/Mid Chest, Triceps, Abs",
+      "water_liters": 1.75,
+      "note": "[check-in 2026-09-28] Reported: Chest + Triceps. Exercises: Chest: 3 mid, 3 upper, 2 lower; Triceps: 3 exercises. Creatine: yes. Protein: yes. Felt good, solid session. Water ~6-8 glasses (transcript garbled). Carbs not reported."
+    },
+    {
+      "date": "2026-09-29",
+      "weekday": "Tuesday",
+      "week_monday": "2026-09-28",
+      "week_title": "Sep 28, 2026",
+      "workout_option": "Back, Biceps, Forearms",
+      "water_liters": null,
+      "note": "[check-in 2026-09-29] Reported: back + biceps + abs. Creatine: yes. Protein: yes. reported via WhatsApp; carbs and water not mentioned"
+    },
+    {
+      "date": "2026-09-30",
+      "weekday": "Wednesday",
+      "week_monday": "2026-09-28",
+      "week_title": "Sep 28, 2026",
+      "workout_option": "OFF / Absent",
+      "water_liters": null,
+      "note": "[check-in 2026-09-30] Reported: rest day (leave). gym leave — busy with income tax return filing last date; deadline extended 15 days"
+    }
+  ]
+}
